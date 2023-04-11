@@ -1,7 +1,7 @@
 <?php
 /**
  * @package    JLSitemap Component
- * @version    @version@
+ * @version    1.12.0
  * @author     Joomline - joomline.ru
  * @copyright  Copyright (c) 2010 - 2022 Joomline. All rights reserved.
  * @license    GNU/GPL license: http://www.gnu.org/copyleft/gpl.html
@@ -291,6 +291,7 @@ class JLSitemapModelSitemap extends BaseDatabaseModel
 	public function getXML($rows = array())
 	{
 		$rows       = (empty($rows)) ? $this->getUrls()->includes : $rows;
+
 		$date       = Factory::getDate()->toSql();
 		$comment    = '<!-- JLSitemap ' . $date . ' -->';
 		$xsl        = $this->generateXSL('urlset');
@@ -331,10 +332,14 @@ class JLSitemapModelSitemap extends BaseDatabaseModel
 				}
 
 				// Lastmod
-				if ($lastmod = $row->get('lastmod', false))
-				{
-					$url->addChild('lastmod', Factory::getDate($lastmod)->toISO8601());
-				}
+				// Получаем дату последнего изменения страницы
+        		$date = new DateTime();
+				$formatted_date = $date->format("Y-m-d H:i");
+				$lastmod = $formatted_date. ' +00:00';
+				//if ($lastmod = $row->get('lastmod', false))
+				//{
+					$url->addChild('lastmod', $lastmod);
+				//}
 
 				// Alternates
 				if ($alternates = $row->get('alternates', false))
@@ -554,88 +559,123 @@ class JLSitemapModelSitemap extends BaseDatabaseModel
 			$includes[$key]    = $url;
 			$filterMenuHomes[] = $key;
 
-			// Add menu items to urls arrays
-			foreach ($this->getMenuItems($multilanguage, $filterMenus, $siteRobots, $guestAccess) as $item)
+			$urls = $config->get('urls', '');
+			$urls = explode(';', $urls);
+			$urls.array_pop();
+
+			foreach($urls as $item)
 			{
-				$type            = array($item->type);
-				$link            = ($siteSef) ? Route::_($item->loc) : $item->loc;
+				$item = str_replace(' ', '', $item);
+				// Add pages
+				$type            = array(Text::_('COM_JLSITEMAP_TYPES_MENU'));
+				$title           = $siteConfig->get('sitename');
+				$link            = '/'. $item;
 				$level           = count(explode('/', $link)) - 1;
 				$key             = (empty($link)) ? '/' : $link;
 				$loc             = $siteRoot . $link;
 				$changefreq      = $config->get('changefreq', 'weekly');
 				$changefreqValue = $changefreqValues[$changefreq];
 				$priority        = $config->get('priority', '0.5');
+				$exclude         = false;
 
-				// Prepare exclude
-				$exclude = array();
-				if (!$item->home)
-				{
-					$exclude = ($item->exclude) ? $item->exclude : array();
-					$exclude = array_merge($exclude, $this->filtering($link, $filterRaw, $filterStrpos));
-
-					foreach ($exclude as &$value)
-					{
-						$value = new Registry($value);
-					}
-				}
-
-				// Prepare alternates
-				$alternates = array();
-				if (is_array($item->alternates))
-				{
-					foreach ($item->alternates as $lang => $href)
-					{
-						$href = ($siteSef) ? Route::_($href) : $href;
-						if (empty($href))
-						{
-							$href = '/';
-						}
-						if (!isset($excludes[$href]) && empty($this->filtering($href, $filterRaw, $filterStrpos)))
-						{
-							$alternates[$lang] = rtrim(Uri::root(), '/') . $href;
-						}
-					}
-
-					if (!empty($alternates) && !isset($alternates['x-default']) && isset($alternates[$defaultLanguage]))
-					{
-						$alternates['x-default'] = $alternates[$defaultLanguage];
-					}
-				}
-
-				// Create url Registry
 				$url = new Registry();
 				$url->set('type', $type);
-				$url->set('title', $item->title);
+				$url->set('title', $title);
 				$url->set('link', $link);
 				$url->set('level', ($level > 0) ? $level : 1);
 				$url->set('loc', $loc);
 				$url->set('changefreq', $changefreq);
 				$url->set('changefreqValue', $changefreqValue);
 				$url->set('priority', $priority);
-				$url->set('exclude', (!empty($exclude)) ? $exclude : false);
-				$url->set('alternates', (!empty($alternates)) ? $alternates : false);
+				$url->set('exclude', $exclude);
 
-				// Add url to arrays
-				$all[$key] = $url;
-				if (!empty($exclude))
-				{
-					$excludes[$key] = $url;
-				}
-				else
-				{
-					$includes[$key] = $url;
-				}
-				$menus[$key] = $url;
-
-				if ($item->home)
-				{
-					$filterMenuHomes[] = $key;
-				}
-				elseif (is_array($filterMenuItems) && empty($exclude))
-				{
-					$filterMenuItems[] = $key;
-				}
+				$all [$key]        = $url;
+				$includes[$key]    = $url;
+				$filterMenuHomes[] = $key;
 			}
+
+			// Add menu items to urls arrays
+			//foreach ($this->getMenuItems($multilanguage, $filterMenus, $siteRobots, $guestAccess) as $item)
+			//{
+			//	$type            = array($item->type);
+			//	$link            = ($siteSef) ? Route::_($item->loc) : $item->loc;
+			//	$level           = count(explode('/', $link)) - 1;
+			//	$key             = (empty($link)) ? '/' : $link;
+			//	$loc             = $siteRoot . $link;
+			//	$changefreq      = $config->get('changefreq', 'weekly');
+			//	$changefreqValue = $changefreqValues[$changefreq];
+			//	$priority        = $config->get('priority', '0.5');
+
+			//	// Prepare exclude
+			//	$exclude = array();
+			//	if (!$item->home)
+			//	{
+			//		$exclude = ($item->exclude) ? $item->exclude : array();
+			//		$exclude = array_merge($exclude, $this->filtering($link, $filterRaw, $filterStrpos));
+
+			//		foreach ($exclude as &$value)
+			//		{
+			//			$value = new Registry($value);
+			//		}
+			//	}
+
+			//	// Prepare alternates
+			//	$alternates = array();
+			//	if (is_array($item->alternates))
+			//	{
+			//		foreach ($item->alternates as $lang => $href)
+			//		{
+			//			$href = ($siteSef) ? Route::_($href) : $href;
+			//			if (empty($href))
+			//			{
+			//				$href = '/';
+			//			}
+			//			if (!isset($excludes[$href]) && empty($this->filtering($href, $filterRaw, $filterStrpos)))
+			//			{
+			//				$alternates[$lang] = rtrim(Uri::root(), '/') . $href;
+			//			}
+			//		}
+
+			//		if (!empty($alternates) && !isset($alternates['x-default']) && isset($alternates[$defaultLanguage]))
+			//		{
+			//			$alternates['x-default'] = $alternates[$defaultLanguage];
+			//		}
+			//	}
+
+			//	// Create url Registry
+			//	$url = new Registry();
+			//	$url->set('type', $type);
+			//	$url->set('title', $item->title);
+			//	$url->set('link', $link);
+			//	$url->set('level', ($level > 0) ? $level : 1);
+			//	$url->set('loc', $loc);
+			//	$url->set('changefreq', $changefreq);
+			//	$url->set('changefreqValue', $changefreqValue);
+			//	$url->set('priority', $priority);
+			//	$url->set('exclude', (!empty($exclude)) ? $exclude : false);
+			//	$url->set('alternates', (!empty($alternates)) ? $alternates : false);
+
+			//	// Add url to arrays
+			//	$all[$key] = $url;
+			//	if (!empty($exclude))
+			//	{
+			//		$excludes[$key] = $url;
+			//	}
+			//	else
+			//	{
+			//		$includes[$key] = $url;
+			//	}
+			//	$menus[$key] = $url;
+
+			//	if ($item->home)
+			//	{
+			//		$filterMenuHomes[] = $key;
+			//	}
+			//	elseif (is_array($filterMenuItems) && empty($exclude))
+			//	{
+			//		$filterMenuItems[] = $key;
+			//	}
+			//}
 
 			// Prepare config
 			$config->set('siteConfig', $siteConfig);
