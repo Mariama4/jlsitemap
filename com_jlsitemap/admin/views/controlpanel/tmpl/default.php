@@ -15,9 +15,33 @@ use Joomla\CMS\Language\Text;
 use Joomla\CMS\Layout\LayoutHelper;
 
 HTMLHelper::stylesheet('com_jlsitemap/admin.min.css', array('version' => 'auto', 'relative' => true));
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $file = JFactory::getApplication()->input->files->get('my_file');
+    $filename = JFile::makeSafe($file['name']);
+
+    // Путь, куда будет сохранен файл
+    $destination = JPATH_SITE . '/jlsitemap/' . $filename;
+
+
+    // Сохраняем файл на сервер
+    JFile::upload($file['tmp_name'], $destination);
+
+    // Выводим сообщение об успешной загрузке
+    echo '<p>Файл ' . $filename . ' успешно загружен на сервер.</p>';
+}
 ?>
 <div id="controlPanel">
 	<div class="main">
+		<?php
+		echo '<p>Название файла строго SITEMAP_URLS.txt</p>';
+		$path = JPATH_SITE . '/jlsitemap/';
+		$files = JFolder::files($path);
+		echo '<p>Файлов ' . count($files) . '</p>';
+		?>
+		<form method="post" enctype="multipart/form-data">
+			<input type="file" name="my_file">
+			<button type="submit">Загрузить файл</button>
+		</form>
 		<?php echo LayoutHelper::render('components.jlsitemap.admin.messages', $this->messages); ?>
 		<div class="actions">
 			<?php

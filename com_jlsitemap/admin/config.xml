@@ -7,10 +7,6 @@
 			   label="COM_JLSITEMAP_PARAMS_FILENAME"
 			   description="COM_JLSITEMAP_PARAMS_FILENAME_DESC"
 			   default="sitemap"/>
-		<field name="urls" type="text"
-			   label="COM_JLSITEMAP_PARAMS_URLS"
-			   description="COM_JLSITEMAP_PARAMS_URLS_DESC"
-			   default=""/>
 		<field name="xsl" type="radio"
 			   default="1" label="COM_JLSITEMAP_PARAMS_XSL"
 			   class="btn-group btn-group-yesno">

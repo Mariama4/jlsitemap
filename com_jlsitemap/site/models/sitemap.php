@@ -559,7 +559,15 @@ class JLSitemapModelSitemap extends BaseDatabaseModel
 			$includes[$key]    = $url;
 			$filterMenuHomes[] = $key;
 
-			$urls = $config->get('urls', '');
+			$file_path = JPATH_SITE . '/jlsitemap/SITEMAP_URLS.txt';
+			if (file_exists($file_path)) {
+				$urls = file_get_contents($file_path);
+				// Обрабатываем содержимое файла здесь
+			} else {
+				// Файл не найден
+				echo '<p>Файл не найден</p>';
+			}
+			//$urls = $config->get('urls', '');
 			$urls = explode(';', $urls);
 			$urls.array_pop();
 
